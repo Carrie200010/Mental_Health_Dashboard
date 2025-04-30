@@ -1,15 +1,4 @@
-# 生成最终修复后的 app.py 内容，包含：
-# 1. 正确的端口绑定（host="0.0.0.0", port=os.environ.get("PORT", 8050)）
-# 2. 正确图片路径
-# 3. 最近7天情绪数据
-# 4. 报表颜色统一
-# 5. 图表与历史访问安全处理
-# 6. 聊天输入清空
-# 7. AI 图标 & logo 路径正确
 
-app_code_final_path = "/mnt/data/app.py"
-
-app_code_final = '''
 import dash
 from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -284,10 +273,3 @@ def update_chat(chat_data):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
-'''
-
-# 保存为文件
-with open(app_code_final_path, "w") as f:
-    f.write(app_code_final)
-
-app_code_final_path
