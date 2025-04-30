@@ -1,10 +1,20 @@
+# 生成最终修复后的 app.py 内容，包含：
+# 1. 正确的端口绑定（host="0.0.0.0", port=os.environ.get("PORT", 8050)）
+# 2. 正确图片路径
+# 3. 最近7天情绪数据
+# 4. 报表颜色统一
+# 5. 图表与历史访问安全处理
+# 6. 聊天输入清空
+# 7. AI 图标 & logo 路径正确
 
+app_code_final_path = "/mnt/data/app.py"
+
+app_code_final = '''
 import dash
 from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
-import datetime
+import datetime, random, os
 from textblob import TextBlob
-import random
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "Mental Health & Well-Being Dashboard"
@@ -19,12 +29,10 @@ mood_icons = {
     "Negative": "/assets/sad.png"
 }
 
-# 模拟历史数据
 def generate_history():
     history = []
-    start = datetime.date(2025, 3, 1)
-    end = datetime.date.today() - datetime.timedelta(days=1)
-    for i in range((end - start).days):
+    start = datetime.date.today() - datetime.timedelta(days=30)
+    for i in range(30):
         d = start + datetime.timedelta(days=i)
         history.append({
             "date": d.strftime("%b %d"),
@@ -33,19 +41,7 @@ def generate_history():
             "anxiety": random.randint(3, 9)
         })
     return history
-    start = datetime.date(2025, 3, 1)
-    end = datetime.date.today() - datetime.timedelta(days=1)
-    for i in range((end - start).days):
-        d = start + datetime.timedelta(days=i)
-        history.append({
-            "date": d.strftime("%b %d"),
-            "mood": random.choice(["Positive", "Neutral", "Negative"]),
-            "stress": random.randint(3, 9),
-            "anxiety": random.randint(3, 9)
-        })
-    return history, ""
 
-# Layout 页面
 initial_chat = [{"role": "ai", "message": "🙂 Hello! I'm here to support you. How are you feeling today?"}]
 app.layout = html.Div([
     dcc.Location(id="url"),
@@ -80,9 +76,7 @@ overview_layout = html.Div([
             html.Div(id="emotion-tip", className="mt-2")
         ])
     ]),
-    dbc.Row([
-        dbc.Col(html.Div(id="mood-icons", className="d-flex justify-content-around"))
-    ], className="my-4"),
+    dbc.Row([dbc.Col(html.Div(id="mood-icons", className="d-flex justify-content-around"))], className="my-4"),
     dbc.Card([
         dbc.CardHeader("Daily Input"),
         dbc.CardBody([
@@ -192,19 +186,16 @@ def handle_overview(n, val, history):
         "date": today,
         "mood": mood,
         "stress": random.randint(4, 8),
-        "anxiety": random.randint(4, 8),
-        "stress": random.randint(4, 8),
         "anxiety": random.randint(4, 8)
     })
     return f"You seem to be feeling {mood}.", [icon], history
 
 @app.callback(Output("trend-chart", "figure"), Input("mood-history", "data"))
 def update_trend_chart(data):
-    data = data[-7:] if data else []
     if not data:
         return {"data": [], "layout": {"title": "Emotion Trends"}}
-    data = data[-7:]  # 只显示最近 7 条数据
-    dates = [d["date"] for d in data]
+    data = data[-7:]
+    dates = [d.get("date", "") for d in data]
     mood_score = {"Positive": 7, "Neutral": 5, "Negative": 3}
     mood = [mood_score.get(d.get("mood", "Neutral"), 5) for d in data if isinstance(d, dict)]
     stress = [d.get("stress", 5) for d in data if isinstance(d, dict)]
@@ -240,11 +231,13 @@ def update_reports(data):
     for d in data:
         mood_count[d.get("mood", "Neutral")] += 1
     pie_fig = {
-        "data": [{"labels": list(mood_count.keys()), "values": list(mood_count.values()), "type": "pie", "marker": {"colors": ["#CD2F2B", "#FFA500", "#A9A9A9"]}}],
+        "data": [{"labels": list(mood_count.keys()), "values": list(mood_count.values()), "type": "pie",
+                  "marker": {"colors": ["#CD2F2B", "orange", "gray"]}}],
         "layout": {"title": "Mood Distribution"}
     }
     bar_fig = {
-        "data": [{"x": list(mood_count.keys()), "y": list(mood_count.values()), "type": "bar", "marker": {"color": ["#CD2F2B", "#FFA500", "#A9A9A9"]}}],
+        "data": [{"x": list(mood_count.keys()), "y": list(mood_count.values()), "type": "bar",
+                  "marker": {"color": ["#CD2F2B", "orange", "gray"]}}],
         "layout": {"title": "Mood Count"}
     }
     return pie_fig, bar_fig
@@ -263,8 +256,13 @@ def survey_result(n, freq, cope):
         html.Div(random.choice(suggestions))
     ])
 
-@app.callback([Output("chat-store", "data"), Output("user-message", "value")], Input("send-button", "n_clicks"),
-              State("user-message", "value"), State("chat-store", "data"), prevent_initial_call=True)
+@app.callback(
+    [Output("chat-store", "data"), Output("user-message", "value")],
+    Input("send-button", "n_clicks"),
+    State("user-message", "value"),
+    State("chat-store", "data"),
+    prevent_initial_call=True
+)
 def handle_chat(n, msg, history):
     if not msg:
         return history, ""
@@ -284,7 +282,12 @@ def update_chat(chat_data):
     return [chat_bubble(m["message"], is_user=(m["role"] == "user")) for m in chat_data]
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+'''
 
+# 保存为文件
+with open(app_code_final_path, "w") as f:
+    f.write(app_code_final)
+
+app_code_final_path
